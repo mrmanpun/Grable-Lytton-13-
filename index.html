@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grable & Lytton 投資性格探測</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        academic: '#2C3E50', // Deep academic blue/gray
+                        accent: '#E67E22', // Orange for psychological focus
+                        safe: '#27AE60',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F8FAFC; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-card.selected { border-color: #2C3E50; background-color: #F1F5F9; box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.2); }
+        .pie-chart { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#2C3E50 0% var(--stock-pct), #27AE60 var(--stock-pct) 100%); display: inline-block; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="app-container" class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden relative min-h-[620px] flex flex-col border border-gray-100">
+        
+        <header class="bg-academic text-white p-6 text-center shrink-0">
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-wider">投資風險性格探測 <span class="text-lg sm:text-xl font-medium text-orange-300 tracking-normal ml-2">By 文仔</span></h1>
+            <p class="text-gray-300 mt-2 text-sm sm:text-base">Grable & Lytton 13-Item Financial Risk Scale</p>
+        </header>
+
+        <div id="intro-screen" class="p-6 sm:p-10 flex-grow flex flex-col justify-center fade-in">
+            <div class="flex justify-center mb-6">
+                <div class="bg-orange-100 text-accent p-4 rounded-full">
+                    <i class="fas fa-brain text-4xl"></i>
+                </div>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">探尋您真實的投資性格</h2>
+            <p class="text-gray-600 mb-4 leading-relaxed text-center">
+                本量表由美國著名大學教授開發，為理財規劃學界廣泛認可的心理測評工具。本測試並非直接詢問預期回報，而是透過情境模擬，精準分析您潛在的 <strong>Risk Personality (風險性格)</strong>。
+            </p>
+            
+            <div class="bg-gray-50 rounded-xl p-4 mb-8 flex items-start">
+                <i class="fas fa-info-circle text-academic mt-1 mr-3 text-lg"></i>
+                <div class="text-sm text-gray-600">
+                    <strong>專業提示：</strong> 本測試題目較為生活化，請根據第一直覺作答。所有個人資料將絕對保密，僅供顧問為您制定個人化方案之用。
+                </div>
+            </div>
+
+            <button onclick="startAssessment()" class="w-full bg-academic hover:bg-slate-700 text-white font-bold py-4 rounded-xl transition duration-300 text-lg shadow-lg flex justify-center items-center">
+                開始性格探測 <i class="fas fa-magic ml-2"></i>
+            </button>
+        </div>
+
+        <div id="question-screen" class="hidden flex-col h-full fade-in flex-grow">
+            <div class="w-full bg-gray-200 h-2">
+                <div id="progress-bar" class="bg-accent h-2 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            
+            <div class="p-6 sm:p-10 flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-6 text-sm text-gray-400 font-bold uppercase tracking-widest">
+                    <span>學術權威量表</span>
+                    <span id="question-counter">1 / 13</span>
+                </div>
+                
+                <h3 id="question-text" class="text-xl font-bold text-gray-800 mb-6 leading-relaxed"></h3>
+                
+                <div id="options-container" class="space-y-3 flex-grow overflow-y-auto pr-2">
+                    </div>
+
+                <div class="flex justify-between mt-6 pt-4 border-t border-gray-100 shrink-0">
+                    <button onclick="prevQuestion()" id="prev-btn" class="px-6 py-3 rounded-lg font-medium text-gray-500 hover:bg-gray-100 hidden">
+                        <i class="fas fa-arrow-left mr-2"></i> 上一題
+                    </button>
+                    <button onclick="nextQuestion()" id="next-btn" class="px-6 py-3 rounded-lg font-bold bg-academic text-white hover:bg-slate-700 transition ml-auto disabled:opacity-50">
+                        下一步 <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-screen" class="hidden flex-col h-full bg-white overflow-y-auto fade-in">
+            
+            <div id="capture-area" class="p-6 sm:p-10 bg-white">
+                <div class="border-b-2 border-academic pb-4 mb-8 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">投資性格分析報告</h2>
+                        <p class="text-gray-500 text-sm">基於 Grable & Lytton 學術模型</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-academic uppercase">By 文仔</p>
+                        <p class="text-[10px] text-gray-400" id="current-date"></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-slate-50 p-6 rounded-2xl text-center border border-slate-200">
+                        <p class="text-xs text-gray-400 font-bold uppercase mb-2">評估性格總分</p>
+                        <p class="text-5xl font-black text-academic mb-2" id="final-score">0</p>
+                        <div id="profile-tag" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-academic text-white uppercase tracking-widest">
+                            探測中
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col justify-center">
+                        <h3 id="profile-name" class="text-xl font-bold text-gray-800 mb-1">載入中...</h3>
+                        <p id="profile-desc" class="text-sm text-gray-600 leading-relaxed">載入中...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white border-2 border-gray-100 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center gap-8">
+                    <div class="flex-grow w-full">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-accent pl-3">性格建議資產比重</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                <span class="text-gray-600 font-medium">股票型資產 (Growth)</span>
+                                <span id="pct-stocks" class="font-bold text-academic text-xl">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                                <span class="text-gray-600 font-medium">防守型資產 (Safety)</span>
+                                <span id="pct-bonds" class="font-bold text-safe text-xl">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="allocation-chart" class="pie-chart shadow-inner shrink-0" style="--stock-pct: 50%;"></div>
+                </div>
+
+                <div class="bg-orange-50 p-4 rounded-lg border-l-4 border-accent mb-8">
+                    <p class="text-sm text-orange-800 leading-relaxed">
+                        <strong>專業備註：</strong> 您的性格分數反映了對「不確定性」的真實抗壓能力。針對防守型資產配置，除了傳統債券，適當配置具備保證成分的保險計劃（如分紅保險），能有效平滑市場波動，為您的財富築起穩固的安全網。
+                    </p>
+                </div>
+
+                <div class="mt-8">
+                    <h4 class="text-lg font-bold text-gray-800 mb-4 border-l-4 border-academic pl-3">詳細問卷紀錄</h4>
+                    <div id="summary-container" class="space-y-3">
+                        </div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-50 flex justify-center gap-4 shrink-0 border-t border-gray-100 no-capture">
+                <button onclick="location.reload()" class="px-6 py-3 rounded-lg font-medium text-gray-500 bg-white border border-gray-200 shadow-sm">
+                    <i class="fas fa-redo"></i> 重新測試
+                </button>
+                <button onclick="takeScreenshot()" class="px-8 py-3 rounded-lg font-bold text-white bg-academic hover:bg-slate-700 transition shadow-lg flex items-center">
+                    <i class="fas fa-download mr-2"></i> 儲存完整報告圖片
+                </button>
+            </div>
+        </div>
+        
+        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-90 z-50 hidden flex-col items-center justify-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-academic mb-4"></i>
+            <p class="text-gray-800 font-medium">正在為您生成完整報告圖，請稍候...</p>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                text: "1. 一般而言，您最好的朋友會如何形容您承擔風險的態度？",
+                options: [
+                    { text: "A. 極力迴避風險", score: 1 },
+                    { text: "B. 謹慎小心，除非有十足把握，否則不輕易冒險", score: 2 },
+                    { text: "C. 經過充分研究及評估後，願意承擔風險", score: 3 },
+                    { text: "D. 樂於冒險的賭徒", score: 4 }
+                ]
+            },
+            {
+                text: "2. 如果您正在參加一個電視遊戲節目，且必須在以下選項中作出選擇，您會傾向哪一項？",
+                options: [
+                    { text: "A. 直接領取 $1,000 現金", score: 1 },
+                    { text: "B. 50% 機會贏取 $5,000；50% 機會一無所獲", score: 2 },
+                    { text: "C. 25% 機會贏取 $10,000；75% 機會一無所獲", score: 3 },
+                    { text: "D. 5% 機會贏取 $100,000；95% 機會一無所獲", score: 4 }
+                ]
+            },
+            {
+                text: "3. 您剛剛存夠了一筆資金，準備去度一個「一生難得一次」的夢幻假期。但在距離出發僅剩三週時，您突然失業了。這時您會：",
+                options: [
+                    { text: "A. 取消假期，將資金保留作應急之用", score: 1 },
+                    { text: "B. 更改行程，選擇一個花費少得多的普通旅行", score: 2 },
+                    { text: "C. 按原定計劃出發，認為自己需要這段時間來整理心情準備求職", score: 3 },
+                    { text: "D. 延長假期，因為這可能是您最後一次享受頂級待遇的機會", score: 4 }
+                ]
+            },
+            {
+                text: "4. 如果您意外獲得 $20,000 的資金可用於投資，您會如何分配？",
+                options: [
+                    { text: "A. 存入銀行的儲蓄賬戶或定期存款", score: 1 },
+                    { text: "B. 投資於安全且高評級的債券或債券型基金", score: 2 },
+                    { text: "C. 投資於股票或股票型基金", score: 3 }
+                ]
+            },
+            {
+                text: "5. 就您過往的經驗而言，投資於股票或股票型基金讓您有何感覺？",
+                options: [
+                    { text: "A. 感到非常不安心且焦慮", score: 1 },
+                    { text: "B. 有點擔心，但尚可接受", score: 2 },
+                    { text: "C. 非常安心，明白波動是市場常態", score: 3 }
+                ]
+            },
+            {
+                text: "6. 當您聽到「風險」一詞時，您腦海中首先浮現的詞語是：",
+                options: [
+                    { text: "A. 損失", score: 1 },
+                    { text: "B. 不確定性", score: 2 },
+                    { text: "C. 機會", score: 3 },
+                    { text: "D. 刺激感", score: 4 }
+                ]
+            },
+            {
+                text: "7. 部分市場分析師預測黃金、藝術品或房地產等實體資產將會升值，而債券價格可能下跌。假設您目前大部分的投資資產都在高息債券中，您會：",
+                options: [
+                    { text: "A. 繼續持有這些債券以策安全", score: 1 },
+                    { text: "B. 賣出債券，將一半資金保留現金，另一半投資於實體資產", score: 2 },
+                    { text: "C. 賣出債券，將所有資金投資於實體資產", score: 3 },
+                    { text: "D. 賣出債券，將所有資金投資於實體資產，並額外借貸購入更多", score: 4 }
+                ]
+            },
+            {
+                text: "8. 以下四個投資組合中，哪一個最能讓您感到安心？",
+                options: [
+                    { text: "A. 最理想情況獲利 $200；最壞情況不賺不賠", score: 1 },
+                    { text: "B. 最理想情況獲利 $800；最壞情況虧損 $200", score: 2 },
+                    { text: "C. 最理想情況獲利 $2,600；最壞情況虧損 $800", score: 3 },
+                    { text: "D. 最理想情況獲利 $4,800；最壞情況虧損 $2,400", score: 4 }
+                ]
+            },
+            {
+                text: "9. 假設您購買了一筆投資，但一個月後整個市場下跌了 15%。若基本面沒有改變，您會：",
+                options: [
+                    { text: "A. 全數賣出，以免遭受更大的損失", score: 1 },
+                    { text: "B. 繼續持有，等待市場回升", score: 2 },
+                    { text: "C. 趁低吸納，投入更多資金", score: 3 }
+                ]
+            },
+            {
+                text: "10. 假設除了您現有的資產外，您還無條件獲贈 $1,000。現在要求您在以下選項中作出選擇：",
+                options: [
+                    { text: "A. 確定可以額外獲得 $500", score: 1 },
+                    { text: "B. 50% 機會額外獲得 $1,000；50% 機會維持現狀", score: 3 }
+                ]
+            },
+            {
+                text: "11. 假設除了您現有的資產外，您還無條件獲贈 $2,000。現在要求您在以下選項中作出選擇：",
+                options: [
+                    { text: "A. 確定會損失其中的 $500", score: 1 },
+                    { text: "B. 50% 機會損失 $1,000；50% 機會沒有任何損失", score: 3 }
+                ]
+            },
+            {
+                text: "12. 假設您即將面臨一項重大的財務抉擇，您會傾向選擇：",
+                options: [
+                    { text: "A. 100% 確定獲得 $500 的利潤", score: 1 },
+                    { text: "B. 50% 機會獲得 $1,000 利潤；50% 機會不賺不賠", score: 3 }
+                ]
+            },
+            {
+                text: "13. 若能顯著改善您的長遠財務狀況，您是否願意承擔較高的財務風險？",
+                options: [
+                    { text: "A. 完全不願意，我寧願維持現狀", score: 1 },
+                    { text: "B. 願意承擔小部分風險", score: 2 },
+                    { text: "C. 非常願意，我明白高回報伴隨高風險", score: 3 }
+                ]
+            }
+        ];
+
+        const profiles = [
+            { min: 0, max: 18, name: "Low (保守型性格)", desc: "您對本金安全有極高要求，風險耐受度極低。適合以保證回報及低波動作為核心配置。", stocks: 20, bonds: 80 },
+            { min: 19, max: 22, name: "Below Average (穩健保守)", desc: "您可以接受極小幅度的市場波動，但心理上仍偏好穩定增長。配置應以防守為主。", stocks: 35, bonds: 65 },
+            { min: 23, max: 28, name: "Average (平衡型性格)", desc: "您是典型的平衡型，理解波動是回報的一部分。適合股債平衡的多元資產配置。", stocks: 55, bonds: 45 },
+            { min: 29, max: 32, name: "Above Average (穩健進取)", desc: "您有較強的冒險精神，能保持冷靜面對市場下挫。可以配置較高比例的股票資產。", stocks: 75, bonds: 25 },
+            { min: 33, max: 100, name: "High (積極型性格)", desc: "您具備極高的風險性格，視市場波動為機會。追求長期資本增長是您的首要目標。", stocks: 95, bonds: 5 }
+        ];
+
+        let currentQuestionIndex = 0;
+        let answers = new Array(questions.length).fill(null);
+
+        function startAssessment() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('question-screen').classList.remove('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQuestionIndex];
+            document.getElementById('question-counter').textContent = `${currentQuestionIndex + 1} / ${questions.length}`;
+            document.getElementById('question-text').textContent = q.text;
+            document.getElementById('progress-bar').style.width = `${((currentQuestionIndex) / questions.length) * 100}%`;
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const isSelected = answers[currentQuestionIndex] === idx;
+                const btn = document.createElement('button');
+                btn.className = `option-card w-full text-left p-4 rounded-xl border-2 transition ${isSelected ? 'selected' : 'border-gray-100 bg-white'}`;
+                btn.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mr-4 ${isSelected ? 'border-academic' : 'border-gray-200'} shrink-0">
+                            ${isSelected ? '<div class="w-2.5 h-2.5 rounded-full bg-academic"></div>' : ''}
+                        </div>
+                        <span class="font-medium text-gray-700 leading-snug">${opt.text}</span>
+                    </div>`;
+                btn.onclick = () => { answers[currentQuestionIndex] = idx; renderQuestion(); };
+                container.appendChild(btn);
+            });
+
+            document.getElementById('prev-btn').classList.toggle('hidden', currentQuestionIndex === 0);
+            const nextBtn = document.getElementById('next-btn');
+            if (answers[currentQuestionIndex] !== null) {
+                nextBtn.removeAttribute('disabled');
+                nextBtn.innerHTML = currentQuestionIndex === questions.length - 1 ? '揭曉探測結果 <i class="fas fa-search ml-2"></i>' : '下一步 <i class="fas fa-arrow-right ml-2"></i>';
+            } else {
+                nextBtn.setAttribute('disabled', 'true');
+                nextBtn.innerHTML = '請先選擇 <i class="fas fa-arrow-right ml-2"></i>';
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++; renderQuestion();
+            } else { showResults(); }
+        }
+
+        function prevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } }
+
+        function showResults() {
+            let total = 0;
+            const summaryContainer = document.getElementById('summary-container');
+            summaryContainer.innerHTML = '';
+            
+            answers.forEach((ansIdx, qIdx) => {
+                const q = questions[qIdx];
+                const selectedOpt = q.options[ansIdx];
+                total += selectedOpt.score;
+                
+                const div = document.createElement('div');
+                div.className = "bg-gray-50 p-4 rounded-lg border border-gray-200 mb-3";
+                div.innerHTML = `
+                    <p class="text-academic font-bold mb-2 leading-relaxed">${q.text}</p>
+                    <div class="flex justify-between items-start pt-2 border-t border-gray-200">
+                        <p class="text-orange-700 font-medium text-sm">您的選擇：${selectedOpt.text}</p>
+                        <span class="text-xs text-gray-400 bg-white px-2 py-1 rounded shadow-sm border shrink-0 ml-3">得分: ${selectedOpt.score}</span>
+                    </div>
+                `;
+                summaryContainer.appendChild(div);
+            });
+
+            const profile = profiles.find(p => total >= p.min && total <= p.max) || profiles[0];
+            document.getElementById('final-score').textContent = total;
+            document.getElementById('profile-name').textContent = profile.name;
+            document.getElementById('profile-desc').textContent = profile.desc;
+            document.getElementById('pct-stocks').textContent = `${profile.stocks}%`;
+            document.getElementById('pct-bonds').textContent = `${profile.bonds}%`;
+            document.getElementById('allocation-chart').style.setProperty('--stock-pct', `${profile.stocks}%`);
+            document.getElementById('current-date').textContent = new Date().toLocaleString('zh-HK');
+
+            document.getElementById('question-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+
+        function takeScreenshot() {
+            const captureArea = document.getElementById('capture-area');
+            const resultScreen = document.getElementById('result-screen');
+            const appContainer = document.getElementById('app-container');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+
+            // 臨時移除滾動條及高度限制，確保能夠完整截圖
+            resultScreen.classList.remove('overflow-y-auto', 'h-full');
+            appContainer.classList.remove('overflow-hidden');
+            appContainer.style.height = 'auto';
+
+            setTimeout(() => {
+                html2canvas(captureArea, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `GrableLytton_探測報告_${new Date().getTime()}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    
+                    // 恢復原有佈局設定
+                    resultScreen.classList.add('overflow-y-auto', 'h-full');
+                    appContainer.classList.add('overflow-hidden');
+                    appContainer.style.height = '';
+                    
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                });
+            }, 500); // 確保畫面渲染完成後再進行截圖
+        }
+    </script>
+</body>
+</html>
+
